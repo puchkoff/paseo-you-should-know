@@ -41,7 +41,7 @@ export const preferences = defineSettings({
   version: 1,
   schema: z.object({
     enabled: z.boolean().default(true),
-    model: z.enum(MODELS).default("haiku"),
+    model: z.enum(MODELS).default("sonnet"),
     // Turns with fewer tool calls are chat, not work, and are skipped to save model calls.
     minToolCalls: z.number().int().min(0).default(3),
   }),

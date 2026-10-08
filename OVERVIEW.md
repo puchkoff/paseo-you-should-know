@@ -16,7 +16,7 @@ The plugin watches completed turns of every agent on the daemon, including agent
 Needs the `claude` CLI on the daemon machine, logged in. Each observed turn is one model call on your account. Settings → Plugins → You should know has the following options:
 
 - **Watch agent turns**: turns the observer on or off.
-- **Model**: haiku (default, about 3 to 5 seconds per turn), sonnet or opus.
+- **Model**: sonnet (default), haiku (faster, about 3 to 5 seconds per turn) or opus.
 - **Skip turns with fewer tool calls than**: default 3. Short chat turns are skipped.
 
 ## Limits

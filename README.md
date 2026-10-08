@@ -51,7 +51,7 @@ Open **Settings → Plugins → You should know**:
 | Setting | Default | What it does |
 | --- | --- | --- |
 | Watch agent turns | on | Turns the observer on or off. |
-| Model | haiku | Which Claude model reviews each turn: haiku (about 3–5 s), sonnet or opus. |
+| Model | sonnet | Which Claude model reviews each turn: sonnet (default), haiku (faster, about 3–5 s) or opus. |
 | Skip turns with fewer tool calls than | 3 | Short chat turns are skipped to save model calls. Set it to 0 to review every turn. |
 
 ## How it works
@@ -65,7 +65,7 @@ Only one review runs per agent at a time.
 
 ## Good to know
 
-- **Cost**: each reviewed turn is one Claude call on your own account. Haiku keeps it cheap.
+- **Cost**: each reviewed turn is one Claude call on your own account. Pick haiku to keep it cheap.
 - **Privacy**: the turn summary (your requests, the agent's reply, command lines, file names) goes to Claude through your `claude` CLI login. Nothing else is sent anywhere.
 - **Notes are temporary**: they live in the daemon's memory. Restarting the daemon or reloading the plugin clears them.
 - **It can be wrong**: the reviewer sees a summary, not the full files or command output. Check a note before acting on it.
