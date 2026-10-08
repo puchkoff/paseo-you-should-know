@@ -1,0 +1,7 @@
+{
+  "id": "you-should-know",
+  "name": "You should know",
+  "requirements": {
+    "paseo": ">=0.11.1"
+  }
+}
