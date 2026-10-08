@@ -71,7 +71,7 @@ function Button({ theme, label, primary, disabled, onPress }: { theme: PluginThe
 
 export function NoteView({ theme, agentId, note }: { theme: PluginTheme; agentId: string; note: Note }) {
   const { pending, error, dismiss, send } = useNoteActions(agentId, note);
-  const tone = note.tag === "heads_up" ? theme.colors.statusWarning : theme.colors.accent;
+  const tone = note.tag === "heads_up" || note.tag === "stuck" ? theme.colors.statusWarning : theme.colors.accent;
 
   if (note.status !== "open") {
     return (

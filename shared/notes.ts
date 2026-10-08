@@ -4,7 +4,7 @@ import { z } from "zod";
 export const CARD_KIND = "note";
 export const CARD_VERSION = 1;
 
-export const TAGS = ["you_should_know", "heads_up"] as const;
+export const TAGS = ["you_should_know", "heads_up", "stuck", "simpler"] as const;
 export type Tag = (typeof TAGS)[number];
 
 export const noteSchema = z.object({
@@ -41,6 +41,7 @@ export const preferences = defineSettings({
   version: 1,
   schema: z.object({
     enabled: z.boolean().default(true),
+    // Sonnet: the stuck and simpler checks need judgment, not pattern matching.
     model: z.enum(MODELS).default("sonnet"),
     // Turns with fewer tool calls are chat, not work, and are skipped to save model calls.
     minToolCalls: z.number().int().min(0).default(3),
@@ -48,7 +49,16 @@ export const preferences = defineSettings({
 });
 
 export function tagLabel(tag: Tag): string {
-  return tag === "heads_up" ? "Heads up" : "You should know";
+  switch (tag) {
+    case "heads_up":
+      return "Heads up";
+    case "stuck":
+      return "Going in circles";
+    case "simpler":
+      return "Simpler way";
+    case "you_should_know":
+      return "You should know";
+  }
 }
 
 // What "Send to agent" puts in the agent's composer.

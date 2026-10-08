@@ -66,3 +66,85 @@ test("a repeated ask is listed once", () => {
   const d = digestTurn([{ type: "user_message", text: "again" }, { type: "user_message", text: "again" }]);
   assert.deepEqual(d?.asks, ["again"]);
 });
+
+const edit = (filePath: string, oldString: string, newString: string): AgentTimelineItem => ({
+  type: "tool_call",
+  callId: `${filePath}${newString}`,
+  name: "Edit",
+  status: "completed",
+  error: null,
+  detail: { type: "edit", filePath, oldString, newString },
+});
+
+test("edits carry their clipped change", () => {
+  const d = digestTurn([{ type: "user_message", text: "x" }, edit("a.ts", "return 1;", "return 2;")]);
+  assert.equal(d?.turn, "edit a.ts\n    - return 1;\n    + return 2;");
+});
+
+test("repeated commands and edits are counted", () => {
+  const d = digestTurn([
+    { type: "user_message", text: "fix it" },
+    shell("npm  test", 1, "1 failing"),
+    shell("npm test", 1, "1 failing"),
+    shell("npm test", 0, "ok"),
+    shell("ls", 0),
+    edit("a.ts", "1", "2"),
+    edit("a.ts", "2", "1"),
+    edit("a.ts", "1", "2"),
+  ]);
+  assert.deepEqual(d?.repeats, ["`npm test` ran 3 times, 2 looked failed", "a.ts edited 3 times"]);
+});
+
+test("earlier turns are brief, oldest first, and skip empty ones", () => {
+  const d = digestTurn([
+    { type: "user_message", text: "too old" },
+    shell("old", 0),
+    { type: "user_message", text: "first" },
+    shell("npm test", 1, "boom"),
+    edit("a.ts", "x", "y"),
+    { type: "assistant_message", text: "fixed" },
+    { type: "user_message", text: "second" },
+    shell("npm test", 1, "boom"),
+    { type: "user_message", text: "empty turn before this" },
+    { type: "user_message", text: "now" },
+    shell("ls", 0),
+  ]);
+  assert.equal(
+    d?.earlier,
+    "### Turn asked: first\n$ npm test (exit 1)\nedit a.ts\nAgent: fixed\n\n### Turn asked: second\n$ npm test (exit 1)",
+  );
+  assert.equal(d?.turn, "$ ls");
+});
+
+test("a long removal keeps the added side, and trailing newlines add no blank lines", () => {
+  const d = digestTurn([{ type: "user_message", text: "x" }, edit("a.ts", `${"a".repeat(400)}\n`, "b\n")]);
+  assert.match(d?.turn ?? "", /^edit a\.ts\n {4}- a{150}…\n {4}\+ b$/);
+});
+
+test("a unified diff wins over old/new strings, without file headers; an empty one falls back", () => {
+  const item = (unifiedDiff: string): AgentTimelineItem => ({
+    type: "tool_call",
+    callId: unifiedDiff,
+    name: "Edit",
+    status: "completed",
+    error: null,
+    detail: { type: "edit", filePath: "a.ts", oldString: "q", newString: "r", unifiedDiff },
+  });
+  assert.equal(digestTurn([{ type: "user_message", text: "x" }, item("--- a/a.ts\n+++ b/a.ts\n@@ -1 +1 @@\n-x\n+y")])?.turn, "edit a.ts\n    @@ -1 +1 @@\n    -x\n    +y");
+  assert.equal(digestTurn([{ type: "user_message", text: "x" }, item("")])?.turn, "edit a.ts\n    - q\n    + r");
+});
+
+test("long commands that share a prefix are not counted as one, and writes count as edits", () => {
+  const prefix = `cd /${"p".repeat(300)} && `;
+  const write: AgentTimelineItem = { type: "tool_call", callId: "w", name: "Write", status: "completed", error: null, detail: { type: "write", filePath: "a.ts", content: "x" } };
+  const d = digestTurn([
+    { type: "user_message", text: "x" },
+    shell(`${prefix}pytest`, 0),
+    shell(`${prefix}ruff check`, 0),
+    shell(`${prefix}git status`, 0),
+    write,
+    edit("a.ts", "x", "y"),
+    edit("a.ts", "y", "x"),
+  ]);
+  assert.deepEqual(d?.repeats, ["a.ts edited 3 times"]);
+});

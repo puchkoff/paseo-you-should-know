@@ -10,9 +10,11 @@ It is a Paseo version of Claude Code's built-in "You should know" observer, whic
 
 ## What you see
 
-A card after the agent's reply, of one of two kinds:
+A card after the agent's reply, of one of four kinds:
 
 - **Heads up**: something is wrong, unfinished or risky, and the reply hides or understates it. Examples: success claimed while a test failed, work committed but not pushed, edits on the wrong branch.
+- **Going in circles**: the agent is stuck. Examples: the same command failing again and again, the same file edited back and forth, a check silenced instead of fixed.
+- **Simpler way**: the agent does far more work than needed, and the card names the concrete smaller path (an existing command, flag, file or function).
 - **You should know**: a non-obvious fact from the turn that matters for your next decision.
 
 Each card has two buttons:
@@ -51,13 +53,13 @@ Open **Settings → Plugins → You should know**:
 | Setting | Default | What it does |
 | --- | --- | --- |
 | Watch agent turns | on | Turns the observer on or off. |
-| Model | sonnet | Which Claude model reviews each turn: sonnet (default), haiku (faster, about 3–5 s) or opus. |
+| Model | sonnet | Which Claude model reviews each turn: sonnet (default), haiku (faster, about 3–5 s, but weak at spotting a stuck agent or a simpler path) or opus. |
 | Skip turns with fewer tool calls than | 3 | Short chat turns are skipped to save model calls. Set it to 0 to review every turn. |
 
 ## How it works
 
 1. An agent finishes a turn. Canceled and failed turns are skipped.
-2. The plugin builds a short summary of the turn: your recent requests, the agent's reply, the tools it called, and the git state of its folder (branch, uncommitted files, unpushed commits).
+2. The plugin builds a short summary of the turn: your recent requests, a brief outline of the two turns before, the agent's reply, the tools it called with a clipped diff of each edit, the commands and files it repeated, and the git state of its folder (branch, uncommitted files, unpushed commits).
 3. It sends that summary to `claude -p` with no tools, no MCP servers, no settings and no saved session, so the review cannot run commands or edit files.
 4. If the model finds something worth your attention, the card appears. The agent is never interrupted.
 
@@ -66,7 +68,7 @@ Only one review runs per agent at a time.
 ## Good to know
 
 - **Cost**: each reviewed turn is one Claude call on your own account. Pick haiku to keep it cheap.
-- **Privacy**: the turn summary (your requests, the agent's reply, command lines, file names) goes to Claude through your `claude` CLI login. Nothing else is sent anywhere.
+- **Privacy**: the turn summary (your requests, the agent's reply, command lines, file names, the first 300 characters of each edit) goes to Claude through your `claude` CLI login. Nothing else is sent anywhere.
 - **Notes are temporary**: they live in the daemon's memory. Restarting the daemon or reloading the plugin clears them.
 - **It can be wrong**: the reviewer sees a summary, not the full files or command output. Check a note before acting on it.
 

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { RunCommand } from "./exec.ts";
 import { gitState } from "./git.ts";
-import { parseFinding } from "./observer.ts";
+import { buildInput, parseFinding } from "./observer.ts";
 
 const out = (structured_output: unknown, extra: object = {}) => JSON.stringify({ is_error: false, result: "", structured_output, ...extra });
 
@@ -85,4 +85,17 @@ test("no remotes is not unpushed work", async () => {
   const text = await gitState(run, "git", "/repo");
   assert.match(text, /No remotes configured/);
   assert.doesNotMatch(text, /unpushed/i);
+});
+
+test("the new tags pass through", () => {
+  assert.equal(parseFinding(out({ show: true, tag: "stuck", title: "t", body: "b" }))?.tag, "stuck");
+  assert.equal(parseFinding(out({ show: true, tag: "simpler", title: "t", body: "b" }))?.tag, "simpler");
+});
+
+test("input carries earlier turns and repeats in order", () => {
+  const input = buildInput({ toolCalls: 3, asks: ["fix"], turn: "$ npm test", repeats: ["`npm test` ran 3 times, 3 looked failed"], earlier: "### Turn asked: a" }, "clean", "/w", []);
+  const at = (s: string) => input.indexOf(s);
+  assert.ok(at("### Turn asked: a") > at("## The agent's earlier turns") && at("### Turn asked: a") < at("## The agent's latest turn"));
+  assert.ok(at("- `npm test` ran 3 times") > at("## Repeated in the latest turn"));
+  assert.match(buildInput({ toolCalls: 3, asks: [], turn: "", repeats: [], earlier: "" }, "", "/w", []), /earlier turns \(oldest first\)\n\n\(none\)[\s\S]*Repeated in the latest turn\n\n\(nothing\)/);
 });
