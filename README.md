@@ -1,5 +1,7 @@
 # You should know — a Paseo plugin
 
+![You should know: a side observer that flags what your Paseo agent's reply hides](docs/hero.svg)
+
 A second pair of eyes for your [Paseo](https://paseo.sh) agents.
 
 Coding agents sometimes say "done" when a test still fails, commit without pushing, or quietly skip part of what you asked. This plugin reads every finished agent turn and, when it spots something like that, puts a short card right under the agent's reply. Most turns are fine, so most turns get no card.
