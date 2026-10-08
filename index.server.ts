@@ -41,7 +41,8 @@ export default function contribute(server: PluginServerContext) {
     const { agent } = event;
     if (!agent.workspaceId) return log(`agent ${agent.id}: skipped, it has no workspace to show a note in`);
     const digest = digestTurn(event.timeline);
-    if (!digest || digest.toolCalls < state.values.minToolCalls) return;
+    if (!digest || digest.toolCalls < state.values.minToolCalls)
+      return log(`agent ${agent.id}: skipped, ${digest?.toolCalls ?? 0} tool calls < ${state.values.minToolCalls}`);
     const input = buildInput(digest, await gitState(runCommand, git, agent.cwd, lifetime.signal), agent.cwd, store.titles(agent.id));
     const started = Date.now();
     const finding = await askObserver(runCommand, claude, state.values.model, input, lifetime.signal);
@@ -73,7 +74,8 @@ export default function contribute(server: PluginServerContext) {
   server.on("agent.turn_ended", (event, { paseo }) => {
     // Canceled and failed turns already have the user's eye. parentAgentId is not a filter: it marks
     // agents started by another Paseo agent (handoffs, advisors), which do real work too.
-    if (event.outcome.kind !== "completed" || archived.has(event.agent.id)) return;
+    if (event.outcome.kind !== "completed" || archived.has(event.agent.id))
+      return log(`agent ${event.agent.id}: skipped, turn ${event.outcome.kind}${archived.has(event.agent.id) ? ", agent archived" : ""}`);
     queued.set(event.agent.id, event);
     // Not awaited: the model call can outlast the 30 s hook timeout.
     if (!busy.has(event.agent.id)) void drain(event.agent.id, paseo);
