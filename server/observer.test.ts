@@ -6,25 +6,33 @@ import { buildInput, parseFinding } from "./observer.ts";
 
 const out = (structured_output: unknown, extra: object = {}) => JSON.stringify({ is_error: false, result: "", structured_output, ...extra });
 
+const note = (fields: object) => out({ show: true, severity: "high", tag: "heads_up", title: "t", what: "w", risk: "r", action: "a", ...fields });
+
 test("show false means no finding", () => {
   assert.equal(parseFinding(out({ show: false })), null);
 });
 
-test("a missing verdict or an empty note is an error, not silence", () => {
-  assert.throws(() => parseFinding(JSON.stringify({ is_error: false, result: "plain text" })), /no structured output/);
-  assert.throws(() => parseFinding(out({ show: true, tag: "heads_up", title: " ", body: "b" })), /title or body empty/);
+test("a low or missing severity is dropped", () => {
+  assert.equal(parseFinding(note({ severity: "low" })), null);
+  assert.equal(parseFinding(note({ severity: undefined })), null);
 });
 
-test("a finding keeps trimmed title and body", () => {
-  assert.deepEqual(parseFinding(out({ show: true, tag: "heads_up", title: " Not pushed ", body: "b" })), {
+test("a missing verdict or an empty note is an error, not silence", () => {
+  assert.throws(() => parseFinding(JSON.stringify({ is_error: false, result: "plain text" })), /no structured output/);
+  assert.throws(() => parseFinding(note({ title: " " })), /field empty/);
+  assert.throws(() => parseFinding(note({ risk: "" })), /field empty/);
+});
+
+test("a finding joins what, risk and action into the body", () => {
+  assert.deepEqual(parseFinding(note({ title: " Not pushed ", what: " Committed. ", risk: "Lost on reset.", action: "Run git push." })), {
     tag: "heads_up",
     title: "Not pushed",
-    body: "b",
+    body: "Committed.\n\nLost on reset.\n\n→ Run git push.",
   });
 });
 
 test("an unknown tag falls back to you_should_know", () => {
-  assert.equal(parseFinding(out({ show: true, tag: "fyi", title: "t", body: "b" }))?.tag, "you_should_know");
+  assert.equal(parseFinding(note({ tag: "fyi" }))?.tag, "you_should_know");
 });
 
 test("an error result throws instead of reading as nothing to say", () => {
@@ -88,8 +96,8 @@ test("no remotes is not unpushed work", async () => {
 });
 
 test("the new tags pass through", () => {
-  assert.equal(parseFinding(out({ show: true, tag: "stuck", title: "t", body: "b" }))?.tag, "stuck");
-  assert.equal(parseFinding(out({ show: true, tag: "simpler", title: "t", body: "b" }))?.tag, "simpler");
+  assert.equal(parseFinding(note({ tag: "stuck" }))?.tag, "stuck");
+  assert.equal(parseFinding(note({ tag: "simpler" }))?.tag, "simpler");
 });
 
 test("input carries earlier turns and repeats in order", () => {

@@ -10,7 +10,7 @@ It is a Paseo version of Claude Code's built-in "You should know" observer, whic
 
 ## What you see
 
-A card after the agent's reply, of one of four kinds:
+A card after the agent's reply. It shows up only when ignoring it would cost you something real, and never repeats what the agent already said. Each card says what happened, what goes wrong if you ignore it, and the one thing to do (→). It comes in one of four kinds:
 
 - **Heads up**: something is wrong, unfinished or risky, and the reply hides or understates it. Examples: success claimed while a test failed, work committed but not pushed, edits on the wrong branch.
 - **Going in circles**: the agent is stuck. Examples: the same command failing again and again, the same file edited back and forth, a check silenced instead of fixed.
