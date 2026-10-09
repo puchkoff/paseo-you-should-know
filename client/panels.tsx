@@ -2,11 +2,16 @@ import { type PluginButtonContentProps, type PluginSurfaceProps, type PluginTime
 import { SettingsCard, SettingsRow, SettingsSection, SettingsSelect, SettingsSwitch } from "@getpaseo/plugin/client/ui";
 import { useQuery } from "@tanstack/react-query";
 import { Text, View } from "react-native";
-import { MIN_TOOL_CALLS, MODELS, type Note, listNotes, preferences } from "../shared/notes.ts";
+import { type z } from "zod";
+import { MIN_TOOL_CALLS, MODELS, type Note, fromLegacy, type legacyNoteSchema, listNotes, preferences } from "../shared/notes.ts";
 import { NOTES_QUERY_KEY, NoteView, POLL_MS } from "./note-view.tsx";
 
 export function NoteCard({ theme, agentId, item }: PluginTimelineItemProps<Note>) {
   return <NoteView theme={theme} agentId={agentId} note={item.data} />;
+}
+
+export function LegacyNoteCard({ theme, agentId, item }: PluginTimelineItemProps<z.output<typeof legacyNoteSchema>>) {
+  return <NoteView theme={theme} agentId={agentId} note={fromLegacy(item.data)} />;
 }
 
 export function PillPopover(props: PluginButtonContentProps) {

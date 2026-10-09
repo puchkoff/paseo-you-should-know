@@ -1,11 +1,12 @@
 import type { PluginButtonRegistration, PluginClientContext } from "@getpaseo/plugin/client";
 import { onNotesChanged } from "./client/events.ts";
 import { POLL_MS } from "./client/note-view.tsx";
-import { NoteCard, PillPopover, SettingsScreen } from "./client/panels.tsx";
-import { CARD_KIND, CARD_VERSION, listNotes, noteSchema } from "./shared/notes.ts";
+import { LegacyNoteCard, NoteCard, PillPopover, SettingsScreen } from "./client/panels.tsx";
+import { CARD_KIND, CARD_VERSION, legacyNoteSchema, listNotes, noteSchema } from "./shared/notes.ts";
 
 export default function contribute(client: PluginClientContext) {
   client.addTimelineRenderer({ kind: CARD_KIND, version: CARD_VERSION, schema: noteSchema, Component: NoteCard });
+  client.addTimelineRenderer({ kind: CARD_KIND, version: 1, schema: legacyNoteSchema, Component: LegacyNoteCard });
   client.addSettingsScreen({ id: "observer", title: "You should know", icon: "Sparkles", Component: SettingsScreen });
 
   // A pill with the open-note count, only on agents that have open notes.

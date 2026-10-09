@@ -1,5 +1,5 @@
 import * as os from "node:os";
-import { TAGS, type Tag } from "../shared/notes.ts";
+import type { Item } from "../shared/notes.ts";
 import type { TurnDigest } from "./digest.ts";
 import { CommandError, type RunCommand, firstLine } from "./exec.ts";
 
@@ -21,31 +21,29 @@ If you are not sure it matters, it doesn't: set show to false. severity "high" m
 
 Write for someone who did NOT read the agent's turn. Plain everyday words, short sentences, no wit, no compressed phrases.
 Every ticket, PR, file or function you name needs a few words on what it is (for example "PR #1568, the role-permissions fix"). If it isn't needed to understand, leave it out.
-title: one plain sentence, under 10 words: what is wrong or at risk.
-what: under 30 words: what the agent did or claimed.
-risk: one sentence, under 25 words: what goes wrong if they ignore it.
-action: one sentence, under 25 words: the one thing to do, with exact commands or file names.
-tag: heads_up (something is wrong or unfinished), stuck, simpler, you_should_know (a fact that changes their next decision).
+items: 1 to 4 bullets, one separate fact each. Each bullet must pass the bar above on its own; never pad.
+lead: 1 to 5 words naming what the bullet is about (for example "PR #1687 migration" or "Not pushed").
+text: one or two sentences, under 40 words: what is true, and the one thing to do if anything, with exact commands or file names.
 Write in the language the person writes in.`;
+
+const MAX_ITEMS = 4;
 
 const SCHEMA = JSON.stringify({
   type: "object",
   properties: {
     show: { type: "boolean" },
     severity: { type: "string", enum: ["low", "high"] },
-    tag: { type: "string", enum: TAGS },
-    title: { type: "string" },
-    what: { type: "string" },
-    risk: { type: "string" },
-    action: { type: "string" },
+    items: {
+      type: "array",
+      maxItems: MAX_ITEMS,
+      items: { type: "object", properties: { lead: { type: "string" }, text: { type: "string" } }, required: ["lead", "text"] },
+    },
   },
   required: ["show"],
 });
 
 export interface Finding {
-  tag: Tag;
-  title: string;
-  body: string;
+  items: Item[];
 }
 
 // No settings, hooks, MCP, skills or tools, and no saved session: the call must not act or recurse.
@@ -90,7 +88,7 @@ export function buildInput(digest: TurnDigest, git: string, cwd: string, shown: 
 interface ClaudeJson {
   is_error?: boolean;
   result?: string;
-  structured_output?: { show?: unknown; severity?: unknown; tag?: unknown; title?: unknown; what?: unknown; risk?: unknown; action?: unknown };
+  structured_output?: { show?: unknown; severity?: unknown; items?: unknown };
 }
 
 export function parseFinding(stdout: string): Finding | null {
@@ -102,12 +100,13 @@ export function parseFinding(stdout: string): Finding | null {
   // Low severity is dropped here: a prompt alone lets too many "nice to know" notes through.
   if (s.show !== true || s.severity !== "high") return null;
   const text = (v: unknown) => (typeof v === "string" ? v.trim() : "");
-  const title = text(s.title);
-  const parts = [text(s.what), text(s.risk), text(s.action)];
-  if (!title || parts.some((p) => !p)) throw new Error("claude chose to show a note but left a field empty");
-  const tag = TAGS.find((t) => t === s.tag) ?? "you_should_know";
-  const body = `${parts[0]}\n\n${parts[1]}\n\n→ ${parts[2]}`;
-  return { tag, title, body };
+  const raw: unknown[] = Array.isArray(s.items) ? s.items.slice(0, MAX_ITEMS) : [];
+  const items = raw.map((i) => {
+    const r = typeof i === "object" && i !== null ? (i as Record<string, unknown>) : {};
+    return { lead: text(r.lead), text: text(r.text) };
+  });
+  if (items.length === 0 || items.some((i) => !i.lead || !i.text)) throw new Error("claude chose to show a note but left a field empty");
+  return { items };
 }
 
 function failureReason(err: unknown): string {

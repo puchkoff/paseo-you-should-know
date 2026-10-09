@@ -3,7 +3,7 @@ import { usePaseo, useRpc } from "@getpaseo/plugin/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
-import { type Note, followUpText, tagLabel, transitionNote } from "../shared/notes.ts";
+import { HEADING, type Note, followUpText, transitionNote } from "../shared/notes.ts";
 import { notesChanged } from "./events.ts";
 
 export const NOTES_QUERY_KEY = ["notes"];
@@ -49,58 +49,41 @@ function useNoteActions(agentId: string, note: Note) {
   };
 }
 
-function Button({ theme, label, primary, disabled, onPress }: { theme: PluginTheme; label: string; primary?: boolean; disabled: boolean; onPress: () => void }) {
+function Action({ theme, label, disabled, onPress }: { theme: PluginTheme; label: string; disabled: boolean; onPress: () => void }) {
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      disabled={disabled}
-      onPress={onPress}
-      style={{
-        paddingVertical: 6,
-        paddingHorizontal: 12,
-        borderRadius: 8,
-        opacity: disabled ? 0.5 : 1,
-        backgroundColor: primary ? theme.colors.accent : theme.colors.surface2,
-      }}
-    >
-      <Text style={{ color: primary ? theme.colors.accentForeground : theme.colors.foreground, fontSize: 13 }}>{label}</Text>
+    <Pressable accessibilityRole="button" accessibilityLabel={label} disabled={disabled} onPress={onPress} style={{ opacity: disabled ? 0.5 : 1 }}>
+      <Text style={{ color: theme.colors.foregroundMuted, fontSize: 12, textDecorationLine: "underline" }}>{label}</Text>
     </Pressable>
   );
 }
 
+// Plain text like an agent reply: a heading, bullets with a bold lead, no box.
 export function NoteView({ theme, agentId, note }: { theme: PluginTheme; agentId: string; note: Note }) {
   const { pending, error, dismiss, send } = useNoteActions(agentId, note);
-  const tone = note.tag === "heads_up" || note.tag === "stuck" ? theme.colors.statusWarning : theme.colors.accent;
 
   if (note.status !== "open") {
     return (
       <Text style={{ color: theme.colors.foregroundMuted, fontSize: 12 }} numberOfLines={1}>
-        {tagLabel(note.tag)} · {note.status === "sent" ? "sent to agent" : "dismissed"}: {note.title}
+        {HEADING} {note.status === "sent" ? "sent to agent" : "dismissed"} ({note.items.map((i) => i.lead).join(", ")})
       </Text>
     );
   }
 
   return (
-    <View
-      style={{
-        gap: 6,
-        padding: 12,
-        borderRadius: 10,
-        borderWidth: 1,
-        borderColor: theme.colors.border,
-        borderLeftWidth: 3,
-        borderLeftColor: tone,
-        backgroundColor: theme.colors.surface1,
-      }}
-    >
-      <Text style={{ color: tone, fontSize: 12, fontWeight: "600" }}>✦ {tagLabel(note.tag)}</Text>
-      <Text style={{ color: theme.colors.foreground, fontSize: 14, fontWeight: "600" }}>{note.title}</Text>
-      <Text style={{ color: theme.colors.foreground, fontSize: 13, lineHeight: 19 }}>{note.body}</Text>
+    <View style={{ gap: 6 }}>
+      <Text style={{ color: theme.colors.foreground, fontSize: 14 }}>{HEADING}</Text>
+      {note.items.map((item, index) => (
+        <View key={index} style={{ flexDirection: "row", gap: 8, paddingLeft: 4 }}>
+          <Text style={{ color: theme.colors.foreground, fontSize: 14, lineHeight: 20 }}>•</Text>
+          <Text style={{ flex: 1, color: theme.colors.foreground, fontSize: 14, lineHeight: 20 }}>
+            <Text style={{ fontWeight: "700" }}>{item.lead}:</Text> {item.text}
+          </Text>
+        </View>
+      ))}
       {error ? <Text style={{ color: theme.colors.statusDanger, fontSize: 12 }}>{error}</Text> : null}
-      <View style={{ flexDirection: "row", gap: 8, marginTop: 4 }}>
-        <Button theme={theme} label="Send to agent" primary disabled={pending} onPress={() => void send()} />
-        <Button theme={theme} label="Dismiss" disabled={pending} onPress={() => void dismiss()} />
+      <View style={{ flexDirection: "row", gap: 12, paddingLeft: 4 }}>
+        <Action theme={theme} label="Send to agent" disabled={pending} onPress={() => void send()} />
+        <Action theme={theme} label="Dismiss" disabled={pending} onPress={() => void dismiss()} />
       </View>
     </View>
   );

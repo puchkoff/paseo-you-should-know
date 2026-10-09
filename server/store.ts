@@ -1,4 +1,4 @@
-import type { Note } from "../shared/notes.ts";
+import { type Note, itemLine } from "../shared/notes.ts";
 
 const MAX_NOTES_PER_AGENT = 20;
 
@@ -19,8 +19,8 @@ export function createStore() {
       if (entry.notes.length > MAX_NOTES_PER_AGENT) entry.notes.shift();
       byAgent.set(agentId, entry);
     },
-    titles(agentId: string): string[] {
-      return (byAgent.get(agentId)?.notes ?? []).map((n) => n.title);
+    shown(agentId: string): string[] {
+      return (byAgent.get(agentId)?.notes ?? []).flatMap((n) => n.items.map(itemLine));
     },
     // Returns the note and whether it moved; a note the store lost is restored from the caller's copy.
     transition(agentId: string, seen: Note, to: Note["status"]): { note: Note; changed: boolean } {

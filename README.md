@@ -4,20 +4,20 @@
 
 A second pair of eyes for your [Paseo](https://paseo.sh) agents.
 
-Coding agents sometimes say "done" when a test still fails, commit without pushing, or quietly skip part of what you asked. This plugin reads every finished agent turn and, when it spots something like that, puts a short card right under the agent's reply. Most turns are fine, so most turns get no card.
+Coding agents sometimes say "done" when a test still fails, commit without pushing, or quietly skip part of what you asked. This plugin reads every finished agent turn and, when it spots something like that, puts a short note right under the agent's reply. Most turns are fine, so most turns get no note.
 
 It is a Paseo version of Claude Code's built-in "You should know" observer, which only works in the terminal UI.
 
 ## What you see
 
-A card after the agent's reply. It shows up only when ignoring it would cost you something real, and never repeats what the agent already said. Each card says what happened, what goes wrong if you ignore it, and the one thing to do (→). It comes in one of four kinds:
+A short note right after the agent's reply, written like the reply itself: the line **Things you should know:** and one to four bullets. Each bullet starts with a bold lead that names the subject, then says what is true and what to do. There is no box around it. It shows up only when ignoring it would cost you something real, and never repeats what the agent already said. Typical notes:
 
-- **Heads up**: something is wrong, unfinished or risky, and the reply hides or understates it. Examples: success claimed while a test failed, work committed but not pushed, edits on the wrong branch.
-- **Going in circles**: the agent is stuck. Examples: the same command failing again and again, the same file edited back and forth, a check silenced instead of fixed.
-- **Simpler way**: the agent does far more work than needed, and the card names the concrete smaller path (an existing command, flag, file or function).
-- **You should know**: a non-obvious fact from the turn that matters for your next decision.
+- Something is wrong, unfinished or risky, and the reply hides or understates it. Examples: success claimed while a test failed, work committed but not pushed, edits on the wrong branch.
+- The agent is stuck. Examples: the same command failing again and again, the same file edited back and forth, a check silenced instead of fixed.
+- The agent does far more work than needed, and the note names the concrete smaller path (an existing command, flag, file or function).
+- A non-obvious fact from the turn that matters for your next decision.
 
-Each card has two buttons:
+Under the bullets are two links:
 
 - **Send to agent** sends the note to the agent as your next message, so it can fix the problem.
 - **Dismiss** hides it.
@@ -61,7 +61,7 @@ Open **Settings → Plugins → You should know**:
 1. An agent finishes a turn. Canceled and failed turns are skipped.
 2. The plugin builds a short summary of the turn: your recent requests, a brief outline of the two turns before, the agent's reply, the tools it called with a clipped diff of each edit, the commands and files it repeated, and the git state of its folder (branch, uncommitted files, unpushed commits).
 3. It sends that summary to `claude -p` with no tools, no MCP servers, no settings and no saved session, so the review cannot run commands or edit files.
-4. If the model finds something worth your attention, the card appears. The agent is never interrupted.
+4. If the model finds something worth your attention, the note appears. The agent is never interrupted.
 
 Only one review runs per agent at a time.
 
@@ -74,8 +74,8 @@ Only one review runs per agent at a time.
 
 ## Troubleshooting
 
-- **The card says "Plugin timeline item unavailable."**: the app did not load the plugin. Make sure the app version (not only the daemon) is at least 0.11.0, then fully close and reopen the app.
-- **No card ever appears**: run `paseo plugin logs you-should-know`. Every reviewed turn logs one line, either `nothing` or the card's title. Skipped turns log why (too few tool calls, turn not completed).
+- **The note says "Plugin timeline item unavailable."**: the app did not load the plugin. Make sure the app version (not only the daemon) is at least 0.11.0, then fully close and reopen the app.
+- **No note ever appears**: run `paseo plugin logs you-should-know`. Every reviewed turn logs one line, either `nothing` or the bold leads of the note's bullets. Skipped turns log why (too few tool calls, turn not completed).
 
 ## Development
 

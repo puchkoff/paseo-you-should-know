@@ -2,11 +2,12 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { RunCommand } from "./exec.ts";
 import { gitState } from "./git.ts";
+import { followUpText, fromLegacy } from "../shared/notes.ts";
 import { buildInput, parseFinding } from "./observer.ts";
 
 const out = (structured_output: unknown, extra: object = {}) => JSON.stringify({ is_error: false, result: "", structured_output, ...extra });
 
-const note = (fields: object) => out({ show: true, severity: "high", tag: "heads_up", title: "t", what: "w", risk: "r", action: "a", ...fields });
+const note = (fields: object) => out({ show: true, severity: "high", items: [{ lead: "l", text: "t" }], ...fields });
 
 test("show false means no finding", () => {
   assert.equal(parseFinding(out({ show: false })), null);
@@ -19,20 +20,23 @@ test("a low or missing severity is dropped", () => {
 
 test("a missing verdict or an empty note is an error, not silence", () => {
   assert.throws(() => parseFinding(JSON.stringify({ is_error: false, result: "plain text" })), /no structured output/);
-  assert.throws(() => parseFinding(note({ title: " " })), /field empty/);
-  assert.throws(() => parseFinding(note({ risk: "" })), /field empty/);
+  assert.throws(() => parseFinding(note({ items: [] })), /field empty/);
+  assert.throws(() => parseFinding(note({ items: [{ lead: " ", text: "t" }] })), /field empty/);
+  assert.throws(() => parseFinding(note({ items: [{ lead: "l", text: "" }] })), /field empty/);
 });
 
-test("a finding joins what, risk and action into the body", () => {
-  assert.deepEqual(parseFinding(note({ title: " Not pushed ", what: " Committed. ", risk: "Lost on reset.", action: "Run git push." })), {
-    tag: "heads_up",
-    title: "Not pushed",
-    body: "Committed.\n\nLost on reset.\n\n→ Run git push.",
+test("a finding keeps its bullets in order, trimmed", () => {
+  assert.deepEqual(parseFinding(note({ items: [{ lead: " Not pushed ", text: " Run git push. " }, { lead: "Tests", text: "One failed." }] })), {
+    items: [
+      { lead: "Not pushed", text: "Run git push." },
+      { lead: "Tests", text: "One failed." },
+    ],
   });
 });
 
-test("an unknown tag falls back to you_should_know", () => {
-  assert.equal(parseFinding(note({ tag: "fyi" }))?.tag, "you_should_know");
+test("more than four bullets are cut to four", () => {
+  const items = Array.from({ length: 6 }, (_, i) => ({ lead: `l${i}`, text: "t" }));
+  assert.equal(parseFinding(note({ items }))?.items.length, 4);
 });
 
 test("an error result throws instead of reading as nothing to say", () => {
@@ -95,15 +99,22 @@ test("no remotes is not unpushed work", async () => {
   assert.doesNotMatch(text, /unpushed/i);
 });
 
-test("the new tags pass through", () => {
-  assert.equal(parseFinding(note({ tag: "stuck" }))?.tag, "stuck");
-  assert.equal(parseFinding(note({ tag: "simpler" }))?.tag, "simpler");
-});
-
 test("input carries earlier turns and repeats in order", () => {
   const input = buildInput({ toolCalls: 3, asks: ["fix"], turn: "$ npm test", repeats: ["`npm test` ran 3 times, 3 looked failed"], earlier: "### Turn asked: a" }, "clean", "/w", []);
   const at = (s: string) => input.indexOf(s);
   assert.ok(at("### Turn asked: a") > at("## The agent's earlier turns") && at("### Turn asked: a") < at("## The agent's latest turn"));
   assert.ok(at("- `npm test` ran 3 times") > at("## Repeated in the latest turn"));
   assert.match(buildInput({ toolCalls: 3, asks: [], turn: "", repeats: [], earlier: "" }, "", "/w", []), /earlier turns \(oldest first\)\n\n\(none\)[\s\S]*Repeated in the latest turn\n\n\(nothing\)/);
+});
+
+test("a version 1 card becomes one bullet", () => {
+  assert.deepEqual(fromLegacy({ id: "n", tag: "heads_up", title: "Not pushed", body: "Run git push.", status: "open" }), {
+    id: "n",
+    status: "open",
+    items: [{ lead: "Not pushed", text: "Run git push." }],
+  });
+});
+
+test("the follow-up lists every bullet", () => {
+  assert.match(followUpText({ items: [{ lead: "A", text: "x." }, { lead: "B", text: "y." }] }), /\n- A: x\.\n- B: y\.\n/);
 });

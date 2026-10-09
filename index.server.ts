@@ -43,11 +43,11 @@ export default function contribute(server: PluginServerContext) {
     const digest = digestTurn(event.timeline);
     if (!digest || digest.toolCalls < state.values.minToolCalls)
       return log(`agent ${agent.id}: skipped, ${digest?.toolCalls ?? 0} tool calls < ${state.values.minToolCalls}`);
-    const input = buildInput(digest, await gitState(runCommand, git, agent.cwd, lifetime.signal), agent.cwd, store.titles(agent.id));
+    const input = buildInput(digest, await gitState(runCommand, git, agent.cwd, lifetime.signal), agent.cwd, store.shown(agent.id));
     const started = Date.now();
     const finding = await askObserver(runCommand, claude, state.values.model, input, lifetime.signal);
     if (archived.has(agent.id)) return;
-    log(`agent ${agent.id}: ${finding ? `${finding.tag} "${finding.title}"` : "nothing"} (${Date.now() - started} ms)`);
+    log(`agent ${agent.id}: ${finding ? finding.items.map((i) => `"${i.lead}"`).join(", ") : "nothing"} (${Date.now() - started} ms)`);
     if (!finding) return;
     const note: Note = { id: randomUUID(), ...finding, status: "open" };
     await appendCard(paseo, agent.id, note);

@@ -85,21 +85,14 @@
       <rect x="40" y="80" width="150" height="10" rx="5" fill="#eef0f6"/>
     </g>
 
-    <!-- heads-up card -->
-    <g transform="translate(28 274)" filter="url(#soft)">
-      <rect x="0" y="0" width="464" height="160" rx="18" fill="url(#amber)" stroke="#fcd34d" stroke-width="1.5"/>
-    </g>
-    <g transform="translate(28 274)">
-      <rect x="0" y="0" width="6" height="160" rx="3" fill="#f59e0b"/>
-      <rect x="22" y="18" width="114" height="26" rx="13" fill="#f59e0b"/>
-      <path d="M36 37 l7 -12 l7 12 z" fill="none" stroke="#ffffff" stroke-width="2" stroke-linejoin="round"/>
-      <text x="56" y="36" font-size="14" font-weight="700" fill="#ffffff">Heads up</text>
-      <text x="22" y="72" font-size="19" font-weight="700" fill="#78350f">Pushed to main with a failing test</text>
-      <text x="22" y="98" font-size="15" fill="#92400e">test_result_fits_in_n still fails — the reply skips it.</text>
-      <rect x="22" y="118" width="132" height="28" rx="14" fill="#78350f"/>
-      <text x="88" y="137" font-size="14" font-weight="600" fill="#ffffff" text-anchor="middle">Send to agent</text>
-      <rect x="164" y="118" width="84" height="28" rx="14" fill="none" stroke="#b45309" stroke-width="1.5"/>
-      <text x="206" y="137" font-size="14" font-weight="600" fill="#92400e" text-anchor="middle">Dismiss</text>
+    <!-- note: plain text under the reply, no box -->
+    <g transform="translate(28 286)">
+      <text x="40" y="18" font-size="17" fill="#111827">Things you should know:</text>
+      <text x="48" y="50" font-size="16" fill="#111827">• <tspan font-weight="700">Failing test:</tspan> test_result_fits_in_n still</text>
+      <text x="62" y="74" font-size="16" fill="#111827">fails. The reply skips it.</text>
+      <text x="48" y="104" font-size="16" fill="#111827">• <tspan font-weight="700">Pushed to main:</tspan> revert or fix first.</text>
+      <text x="62" y="138" font-size="13" fill="#6b7280" text-decoration="underline">Send to agent</text>
+      <text x="166" y="138" font-size="13" fill="#6b7280" text-decoration="underline">Dismiss</text>
     </g>
 
     <!-- composer -->
